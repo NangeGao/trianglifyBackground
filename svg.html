@@ -2,23 +2,54 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>三角背景</title>
+	<title>trianglify Background</title>
   <style type="text/css">
     html, body{
       margin: 0;
       padding: 0;
       overflow: hidden;
-      background-color: #060;
+    }
+    html{
+      background: -webkit-linear-gradient(top left, #a50026, #d73027, #f46d43, #fdae61, #fee08b, #ffffbf, #d9ef8b, #a6d96a, #66bd63, #1a9850, #006837);
+      background: -o-linear-gradient(top left, #a50026, #d73027, #f46d43, #fdae61, #fee08b, #ffffbf, #d9ef8b, #a6d96a, #66bd63, #1a9850, #006837);
+      background: linear-gradient(to bottom right, #a50026, #d73027, #f46d43, #fdae61, #fee08b, #ffffbf, #d9ef8b, #a6d96a, #66bd63, #1a9850, #006837);
+    }
+    body{
+      background: radial-gradient(rgba(0,0,0,0.1),rgba(0,0,0,0.3));
+    }
+    .item{
+      background: radial-gradient(rgba(0,0,0,0.2),rgba(0,0,0,0.4));
     }
   </style>
 </head>
 <body>
-<div id="bg"></div>
+<div id="bg">
+    <svg width="100%" height="100%" version="1.1" id="svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:rgb(0,0,0); stop-opacity:0.1"/>
+                <stop offset="100%" style="stop-color:rgb(10,10,10); stop-opacity:0.2"/>
+            </linearGradient>
+            <linearGradient id="g4" x1="100%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" style="stop-color:rgb(0,0,0); stop-opacity:0.1"/>
+                <stop offset="100%" style="stop-color:rgb(10,10,10); stop-opacity:0.2"/>
+            </linearGradient>
+            <linearGradient id="g3" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:rgb(0,0,0); stop-opacity:0.1"/>
+                <stop offset="100%" style="stop-color:rgb(10,10,10); stop-opacity:0.2"/>
+            </linearGradient>
+            <linearGradient id="g2" x1="100%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:rgb(0,0,0); stop-opacity:0.1"/>
+                <stop offset="100%" style="stop-color:rgb(10,10,10); stop-opacity:0.2"/>
+            </linearGradient>
+        </defs>
+    </svg>
+</div>
 
 <script>
 
 
-var refreshDuration = 10000;
+var refreshDuration = 5000;
 var refreshTimeout;
 var numPointsX;
 var numPointsY;
@@ -27,10 +58,11 @@ var unitHeight;
 var points;
 
 function onLoad(){
-    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width',window.innerWidth);
-    svg.setAttribute('height',window.innerHeight);
-    document.querySelector('#bg').appendChild(svg);
+    var svg = document.querySelector('#svg');
+    var svgWidth = window.innerWidth;
+    var svgHeight = window.innerHeight;
+    svg.setAttribute('width',svgWidth);
+    svg.setAttribute('height',svgHeight);
 
     var unitSize = (window.innerWidth+window.innerHeight)/30; 
     numPointsX = Math.ceil(window.innerWidth/unitSize)+1; //横向每行坐标点数目
@@ -92,7 +124,18 @@ function onLoad(){
                         polygon.setAttribute('points',bottomLeftX+','+bottomLeftY+' '+topRightX+','+topRightY+' '+bottomRightX+','+bottomRightY);
                     }
                 }
-                polygon.setAttribute('fill','rgba(0,0,0,'+(Math.random()/3)+')');
+
+                //给每一个三角形渲染一个从中心点辐射的阴影，效果更逼真
+                if (topLeftX*2 < svgWidth && topLeftY*2 < svgHeight) {
+                    polygon.setAttribute('fill','url(#g1)');
+                } else if (topLeftX*2 > svgWidth && topLeftY*2 > svgHeight) {
+                    polygon.setAttribute('fill','url(#g4)');
+                } else if (topLeftX*2 > svgWidth && topLeftY*2 < svgHeight) {
+                    polygon.setAttribute('fill','url(#g2)');
+                } else {
+                    polygon.setAttribute('fill','url(#g3)');
+                }
+                
                 var animate = document.createElementNS('http://www.w3.org/2000/svg','animate');
                 animate.setAttribute('fill','freeze');
                 animate.setAttribute('attributeName','points');
@@ -104,10 +147,11 @@ function onLoad(){
         }
     }
 
-    //refresh();
+    refresh();
 
 }
 
+//使随机化，除了贴边的坐标点以外，其他的坐标点都进行随机的[-1/3,+1/5]标准间距的调整
 function randomize() {
     for(var i = 0; i < points.length; i++) {
         if(points[i].originX != 0 && points[i].originX != unitWidth*(numPointsX-1)) {
@@ -121,8 +165,10 @@ function randomize() {
 
 function refresh() {
     randomize();
-    for(var i = 0; i < document.querySelector('#bg svg').childNodes.length; i++) {
-        var polygon = document.querySelector('#bg svg').childNodes[i];
+    var polygons = document.querySelectorAll('#bg polygon');
+    var polygons_len = polygons.length;
+    for(var i = 0; i < polygons_len; i++) {
+        var polygon = polygons[i];
         var animate = polygon.childNodes[0];
         if(animate.getAttribute('to')) {
             animate.setAttribute('from',animate.getAttribute('to'));
@@ -130,18 +176,21 @@ function refresh() {
         animate.setAttribute('to',points[polygon.point1].x+','+points[polygon.point1].y+' '+points[polygon.point2].x+','+points[polygon.point2].y+' '+points[polygon.point3].x+','+points[polygon.point3].y);
         animate.beginElement();
     }
-    refreshTimeout = setTimeout(function() {refresh();}, refreshDuration);
+    refreshTimeout = setTimeout(function() {refresh();}, refreshDuration*1.2);
 }
 
 function onResize() {
-    document.querySelector('#bg svg').remove();
+    var polygons = document.querySelectorAll('#bg polygon');
+    [].forEach.call(polygons, function(item){
+        item.remove();
+    });
+    
     clearTimeout(refreshTimeout);
     onLoad();
 }
 
 window.onload = onLoad;
 window.onresize = onResize;
-
 
 
 </script>
